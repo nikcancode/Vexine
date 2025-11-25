@@ -2,46 +2,38 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import math
 
+
 class VexineApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Vexine - Your Personal Health Guide")
-    
-        # FULLSCREEN - Choose one method below
-    
-        # Method 1: True Fullscreen (recommended for immersive experience)
+        self.root.title("VEXINE - Advanced Health Guide")
+        
+        # FULLSCREEN
         self.root.attributes('-fullscreen', True)
         self.root.bind('<Escape>', lambda e: self.root.attributes('-fullscreen', False))
         self.root.bind('<F11>', lambda e: self.root.attributes('-fullscreen', 
                     not self.root.attributes('-fullscreen')))
-    
-        # Method 2: Maximized (uncomment if you prefer this over fullscreen)
-        # self.root.state('zoomed')  # Windows/Linux
-    
-        # Method 3: 90% of screen, centered (uncomment if you prefer this)
-        # screen_width = self.root.winfo_screenwidth()
-        # screen_height = self.root.winfo_screenheight()
-        # width = int(screen_width * 0.9)
-        # height = int(screen_height * 0.9)
-        # x = (screen_width - width) // 2
-        # y = (screen_height - height) // 2
-        # self.root.geometry(f"{width}x{height}+{x}+{y}")
-    
-        # Color scheme - professional with casual mix
+        
+        # Futuristic Dark Color Scheme
         self.colors = {
-            'primary': '#2C3E50',
-            'secondary': '#3498DB',
-            'accent': '#E74C3C',
-            'success': '#27AE60',
-            'bg': '#ECF0F1',
-            'card': '#FFFFFF',
-            'text': '#2C3E50',
-            'light_text': '#7F8C8D'
+            'bg': '#0a0a0a',              # Pure black
+            'bg_secondary': '#1a1a1a',    # Dark gray
+            'primary': '#00ff9f',         # Neon green
+            'secondary': '#00d4ff',       # Neon cyan
+            'accent': '#ff0080',          # Neon pink
+            'card': '#151515',            # Dark card
+            'card_border': '#2a2a2a',     # Subtle border
+            'text': '#ffffff',            # White text
+            'text_dim': '#888888',        # Gray text
+            'success': '#00ff9f',         # Green
+            'warning': '#ffaa00',         # Orange
+            'danger': '#ff0055',          # Red
+            'glow': '#00ff9f'             # Glow effect
         }
-    
-        # Configure root background
+        
+        # Configure root
         self.root.configure(bg=self.colors['bg'])
-    
+        
         # Initialize variables
         self.age = tk.IntVar(value=25)
         self.gender = tk.StringVar(value="male")
@@ -51,596 +43,788 @@ class VexineApp:
         self.desired_body_type = tk.StringVar(value="athletic")
         self.fitness_level = tk.StringVar(value="beginner")
         self.goal = tk.StringVar(value="maintain")
-
-        # BMI result variables
-        self.bmi_value = tk.StringVar(value="--")
-        self.bmi_category = tk.StringVar(value="Calculate to see results")
-        self.ideal_weight_range = tk.StringVar(value="--")
+        self.activity_level = tk.StringVar(value="moderate")
+        
+        # Result variables
+        self.bmi_value = 0
+        self.maintenance_calories = 0
+        self.surplus_calories = 0
+        self.deficit_calories = 0
+        
+        # Page container
+        self.current_page = None
+        
+        # Configure dropdown style
+        self.configure_dropdown_style()
+        
+        # Show input page
+        self.show_input_page()
     
-        # Build UI
-        self.create_header()
-        self.create_main_content()
-
+    def configure_dropdown_style(self):
+        """Configure custom dropdown style with blue text on black background"""
+        style = ttk.Style()
+        style.theme_use('default')
         
-    def create_header(self):
-        """Create application header"""
-        header_frame = tk.Frame(self.root, bg=self.colors['primary'], height=80)
-        header_frame.pack(fill=tk.X)
-        header_frame.pack_propagate(False)
+        # Configure the combobox
+        style.configure('Custom.TCombobox',
+                       fieldbackground='#000000',  # Black background
+                       background='#000000',
+                       foreground=self.colors['secondary'],  # Blue text
+                       arrowcolor=self.colors['secondary'],
+                       bordercolor=self.colors['secondary'],
+                       lightcolor='#000000',
+                       darkcolor='#000000',
+                       selectbackground=self.colors['secondary'],
+                       selectforeground='#000000')
         
-        # App title
-        title = tk.Label(
-            header_frame,
+        # Map for different states
+        style.map('Custom.TCombobox',
+                 fieldbackground=[('readonly', '#000000')],
+                 foreground=[('readonly', self.colors['secondary'])],
+                 selectbackground=[('readonly', self.colors['secondary'])],
+                 selectforeground=[('readonly', '#000000')])
+        
+        # Configure the dropdown listbox
+        self.root.option_add('*TCombobox*Listbox.background', '#000000')
+        self.root.option_add('*TCombobox*Listbox.foreground', self.colors['secondary'])
+        self.root.option_add('*TCombobox*Listbox.selectBackground', self.colors['secondary'])
+        self.root.option_add('*TCombobox*Listbox.selectForeground', '#000000')
+        self.root.option_add('*TCombobox*Listbox.font', ('Orbitron', 10, 'bold'))
+    
+    def clear_page(self):
+        """Clear current page"""
+        if self.current_page:
+            self.current_page.destroy()
+    
+    def reset_inputs(self):
+        """Reset all input fields to default values"""
+        self.age.set(25)
+        self.gender.set("male")
+        self.height_cm.set(170.0)
+        self.weight_kg.set(70.0)
+        self.current_body_type.set("average")
+        self.desired_body_type.set("athletic")
+        self.fitness_level.set("beginner")
+        self.goal.set("maintain")
+        self.activity_level.set("moderate")
+    
+    def show_input_page(self):
+        """Display the input page with full-width layout"""
+        self.clear_page()
+        
+        self.current_page = tk.Frame(self.root, bg=self.colors['bg'])
+        self.current_page.pack(fill=tk.BOTH, expand=True)
+        
+        # Header with only VEXINE
+        header = tk.Frame(self.current_page, bg=self.colors['bg_secondary'], height=100)
+        header.pack(fill=tk.X)
+        header.pack_propagate(False)
+        
+        # Neon line
+        tk.Frame(header, bg=self.colors['primary'], height=3).pack(fill=tk.X)
+        
+        # VEXINE title centered
+        tk.Label(
+            header,
             text="VEXINE",
-            font=('Helvetica', 28, 'bold'),
-            bg=self.colors['primary'],
-            fg='white'
-        )
-        title.pack(side=tk.LEFT, padx=30, pady=20)
+            font=('Orbitron', 48, 'bold'),
+            bg=self.colors['bg_secondary'],
+            fg=self.colors['primary']
+        ).pack(expand=True)
         
-        # Subtitle
-        subtitle = tk.Label(
-            header_frame,
-            text="Your Personal Health & Fitness Guide",
-            font=('Helvetica', 12),
-            bg=self.colors['primary'],
-            fg=self.colors['bg']
-        )
-        subtitle.pack(side=tk.LEFT, padx=(0, 20), pady=20)
-        
-    def create_main_content(self):
-        """Create main content area with scrollable frame"""
-        # Main container
-        main_container = tk.Frame(self.root, bg=self.colors['bg'])
-        main_container.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
-        
-        # Create two-column layout
-        left_column = tk.Frame(main_container, bg=self.colors['bg'])
-        left_column.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
-        
-        right_column = tk.Frame(main_container, bg=self.colors['bg'])
-        right_column.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(10, 0))
-        
-        # Left column content
-        self.create_input_section(left_column)
-        self.create_body_type_section(left_column)
-        
-        # Right column content
-        self.create_results_section(right_column)
-        self.create_recommendations_section(right_column)
-        
-    def create_card_frame(self, parent, title):
-        """Create a styled card frame"""
-        card = tk.Frame(parent, bg=self.colors['card'], relief=tk.RAISED, bd=2)
-        card.pack(fill=tk.BOTH, expand=True, pady=(0, 15))
-        
-        # Card title
-        title_frame = tk.Frame(card, bg=self.colors['secondary'], height=40)
-        title_frame.pack(fill=tk.X)
-        title_frame.pack_propagate(False)
+        # Subtitle below header
+        subtitle_frame = tk.Frame(self.current_page, bg=self.colors['bg'])
+        subtitle_frame.pack(pady=(20, 0))
         
         tk.Label(
-            title_frame,
-            text=title,
-            font=('Helvetica', 14, 'bold'),
-            bg=self.colors['secondary'],
-            fg='white'
-        ).pack(side=tk.LEFT, padx=15, pady=8)
-        
-        # Content frame
-        content = tk.Frame(card, bg=self.colors['card'])
-        content.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
-        
-        return content
-        
-    def create_input_section(self, parent):
-        """Create basic input section"""
-        content = self.create_card_frame(parent, "📊 Basic Information")
-        
-        # Age
-        self.create_labeled_spinbox(content, "Age (years):", self.age, 10, 100, row=0)
-        
-        # Gender
-        gender_frame = tk.Frame(content, bg=self.colors['card'])
-        gender_frame.grid(row=1, column=0, columnspan=2, sticky='w', pady=8)
-        
-        tk.Label(
-            gender_frame,
-            text="Gender:",
-            font=('Helvetica', 11),
-            bg=self.colors['card'],
-            fg=self.colors['text']
-        ).pack(side=tk.LEFT, padx=(0, 10))
-        
-        tk.Radiobutton(
-            gender_frame,
-            text="Male",
-            variable=self.gender,
-            value="male",
-            font=('Helvetica', 10),
-            bg=self.colors['card'],
-            fg=self.colors['text'],
-            activebackground=self.colors['card'],
-            selectcolor=self.colors['card']
-        ).pack(side=tk.LEFT, padx=5)
-        
-        tk.Radiobutton(
-            gender_frame,
-            text="Female",
-            variable=self.gender,
-            value="female",
-            font=('Helvetica', 10),
-            bg=self.colors['card'],
-            fg=self.colors['text'],
-            activebackground=self.colors['card'],
-            selectcolor=self.colors['card']
-        ).pack(side=tk.LEFT, padx=5)
-        
-        # Height
-        self.create_labeled_spinbox(content, "Height (cm):", self.height_cm, 100, 250, row=2, increment=0.5)
-        
-        # Weight
-        self.create_labeled_spinbox(content, "Weight (kg):", self.weight_kg, 30, 200, row=3, increment=0.5)
-        
-        # Fitness Level
-        tk.Label(
-            content,
-            text="Fitness Level:",
-            font=('Helvetica', 11),
-            bg=self.colors['card'],
-            fg=self.colors['text']
-        ).grid(row=4, column=0, sticky='w', pady=8)
-        
-        fitness_combo = ttk.Combobox(
-            content,
-            textvariable=self.fitness_level,
-            values=["beginner", "intermediate", "advanced"],
-            state='readonly',
-            width=18,
-            font=('Helvetica', 10)
-        )
-        fitness_combo.grid(row=4, column=1, sticky='w', pady=8)
-        
-        # Calculate button
-        calc_btn = tk.Button(
-            content,
-            text="Calculate BMI & Get Recommendations",
-            font=('Helvetica', 12, 'bold'),
-            bg=self.colors['success'],
-            fg='white',
-            activebackground='#229954',
-            activeforeground='white',
-            cursor='hand2',
-            relief=tk.FLAT,
-            padx=20,
-            pady=10,
-            command=self.calculate_bmi
-        )
-        calc_btn.grid(row=5, column=0, columnspan=2, pady=(15, 5))
-        
-    def create_labeled_spinbox(self, parent, label_text, variable, from_, to, row, increment=1):
-        """Create a labeled spinbox"""
-        tk.Label(
-            parent,
-            text=label_text,
-            font=('Helvetica', 11),
-            bg=self.colors['card'],
-            fg=self.colors['text']
-        ).grid(row=row, column=0, sticky='w', pady=8)
-        
-        spinbox = tk.Spinbox(
-            parent,
-            from_=from_,
-            to=to,
-            textvariable=variable,
-            width=20,
-            font=('Helvetica', 10),
-            increment=increment
-        )
-        spinbox.grid(row=row, column=1, sticky='w', pady=8)
-        
-    def create_body_type_section(self, parent):
-        """Create body type selection section"""
-        content = self.create_card_frame(parent, "🎯 Body Type & Goals")
-        
-        # Current body type
-        tk.Label(
-            content,
-            text="Current Body Type:",
-            font=('Helvetica', 11),
-            bg=self.colors['card'],
-            fg=self.colors['text']
-        ).grid(row=0, column=0, sticky='w', pady=8)
-        
-        current_combo = ttk.Combobox(
-            content,
-            textvariable=self.current_body_type,
-            values=["underweight", "average", "athletic", "overweight", "obese"],
-            state='readonly',
-            width=18,
-            font=('Helvetica', 10)
-        )
-        current_combo.grid(row=0, column=1, sticky='w', pady=8)
-        
-        # Desired body type
-        tk.Label(
-            content,
-            text="Desired Body Type:",
-            font=('Helvetica', 11),
-            bg=self.colors['card'],
-            fg=self.colors['text']
-        ).grid(row=1, column=0, sticky='w', pady=8)
-        
-        desired_combo = ttk.Combobox(
-            content,
-            textvariable=self.desired_body_type,
-            values=["lean", "athletic", "muscular", "maintain current"],
-            state='readonly',
-            width=18,
-            font=('Helvetica', 10)
-        )
-        desired_combo.grid(row=1, column=1, sticky='w', pady=8)
-        
-        # Goal
-        tk.Label(
-            content,
-            text="Primary Goal:",
-            font=('Helvetica', 11),
-            bg=self.colors['card'],
-            fg=self.colors['text']
-        ).grid(row=2, column=0, sticky='w', pady=8)
-        
-        goal_combo = ttk.Combobox(
-            content,
-            textvariable=self.goal,
-            values=["lose weight", "gain muscle", "maintain", "improve fitness"],
-            state='readonly',
-            width=18,
-            font=('Helvetica', 10)
-        )
-        goal_combo.grid(row=2, column=1, sticky='w', pady=8)
-        
-    def create_results_section(self, parent):
-        """Create BMI results display section"""
-        content = self.create_card_frame(parent, "📈 Your BMI Results")
-        
-        # BMI Value display
-        bmi_display_frame = tk.Frame(content, bg=self.colors['bg'], relief=tk.SUNKEN, bd=2)
-        bmi_display_frame.pack(fill=tk.X, pady=10)
-        
-        tk.Label(
-            bmi_display_frame,
-            text="BMI:",
-            font=('Helvetica', 14),
-            bg=self.colors['bg'],
-            fg=self.colors['text']
-        ).pack(pady=(10, 0))
-        
-        tk.Label(
-            bmi_display_frame,
-            textvariable=self.bmi_value,
-            font=('Helvetica', 32, 'bold'),
+            subtitle_frame,
+            text="INITIALIZE HEALTH PROFILE",
+            font=('Orbitron', 12),
             bg=self.colors['bg'],
             fg=self.colors['secondary']
         ).pack()
         
-        tk.Label(
-            bmi_display_frame,
-            textvariable=self.bmi_category,
-            font=('Helvetica', 12, 'italic'),
-            bg=self.colors['bg'],
-            fg=self.colors['light_text']
-        ).pack(pady=(0, 10))
+        # Main content container with padding
+        content_container = tk.Frame(self.current_page, bg=self.colors['bg'])
+        content_container.pack(fill=tk.BOTH, expand=True, padx=80, pady=30)
         
-        # Ideal weight range
-        tk.Label(
-            content,
-            text="Ideal Weight Range:",
-            font=('Helvetica', 11, 'bold'),
-            bg=self.colors['card'],
-            fg=self.colors['text']
-        ).pack(anchor='w', pady=(10, 5))
+        # Grid layout - 3 columns across full width
+        col1 = tk.Frame(content_container, bg=self.colors['bg'])
+        col1.grid(row=0, column=0, padx=20, sticky='nsew')
         
-        tk.Label(
-            content,
-            textvariable=self.ideal_weight_range,
-            font=('Helvetica', 11),
-            bg=self.colors['card'],
-            fg=self.colors['text']
-        ).pack(anchor='w')
+        col2 = tk.Frame(content_container, bg=self.colors['bg'])
+        col2.grid(row=0, column=1, padx=20, sticky='nsew')
         
-        # BMI Categories reference
-        categories_frame = tk.LabelFrame(
-            content,
-            text="BMI Categories",
-            font=('Helvetica', 10, 'bold'),
-            bg=self.colors['card'],
-            fg=self.colors['text']
+        col3 = tk.Frame(content_container, bg=self.colors['bg'])
+        col3.grid(row=0, column=2, padx=20, sticky='nsew')
+        
+        # Configure grid weights for equal distribution
+        content_container.grid_columnconfigure(0, weight=1)
+        content_container.grid_columnconfigure(1, weight=1)
+        content_container.grid_columnconfigure(2, weight=1)
+        
+        # Column 1 - Biometric Data
+        self.create_futuristic_card(col1, "BIOMETRIC DATA", [
+            ("AGE", self.age, 10, 100, 1),
+            ("HEIGHT", self.height_cm, 100, 250, 0.5, "CM"),
+            ("WEIGHT", self.weight_kg, 30, 200, 0.5, "KG")
+        ], color=self.colors['secondary'])
+        
+        gender_card = self.create_empty_card(col1, "GENDER PROFILE")
+        self.create_neon_radio_group(gender_card, self.gender, 
+                                     [("MALE", "male"), ("FEMALE", "female")])
+        
+        # Column 2 - Body Profile & Goals
+        body_card = self.create_empty_card(col2, "BODY PROFILE")
+        tk.Label(body_card, text="CURRENT", font=('Orbitron', 9, 'bold'),
+                bg=self.colors['card'], fg=self.colors['secondary']).pack(pady=(10,5))
+        self.create_neon_dropdown(body_card, self.current_body_type,
+                                  ["underweight", "average", "athletic", "overweight", "obese"])
+        
+        tk.Label(body_card, text="TARGET", font=('Orbitron', 9, 'bold'),
+                bg=self.colors['card'], fg=self.colors['secondary']).pack(pady=(20,5))
+        self.create_neon_dropdown(body_card, self.desired_body_type,
+                                  ["lean", "athletic", "muscular", "maintain"])
+        
+        goal_card = self.create_empty_card(col2, "PRIMARY GOAL")
+        self.create_neon_dropdown(goal_card, self.goal,
+                                  ["lose weight", "gain muscle", "maintain", "improve fitness"])
+        
+        # Column 3 - Fitness & Activity
+        activity_card = self.create_empty_card(col3, "ACTIVITY LEVEL")
+        self.create_neon_dropdown(activity_card, self.activity_level, 
+                                  ["sedentary", "light", "moderate", "active", "very active"])
+        
+        fitness_card = self.create_empty_card(col3, "FITNESS LEVEL")
+        self.create_neon_dropdown(fitness_card, self.fitness_level,
+                                  ["beginner", "intermediate", "advanced"])
+        
+        # Calculate button at bottom spanning full width
+        btn_frame = tk.Frame(content_container, bg=self.colors['bg'])
+        btn_frame.grid(row=1, column=0, columnspan=3, pady=50)
+        
+        calc_btn = tk.Button(
+            btn_frame,
+            text="⚡ CALCULATE & ANALYZE ⚡",
+            font=('Orbitron', 18, 'bold'),
+            bg=self.colors['primary'],
+            fg='#000000',
+            activebackground=self.colors['secondary'],
+            activeforeground='#000000',
+            cursor='hand2',
+            relief=tk.FLAT,
+            padx=80,
+            pady=25,
+            command=self.calculate_and_proceed
         )
-        categories_frame.pack(fill=tk.X, pady=(15, 0))
+        calc_btn.pack()
         
-        categories = [
-            ("< 18.5", "Underweight", "#3498DB"),
-            ("18.5 - 24.9", "Normal", "#27AE60"),
-            ("25.0 - 29.9", "Overweight", "#F39C12"),
-            ("≥ 30.0", "Obese", "#E74C3C")
-        ]
+        # Hover effect
+        calc_btn.bind('<Enter>', lambda e: calc_btn.config(bg=self.colors['secondary']))
+        calc_btn.bind('<Leave>', lambda e: calc_btn.config(bg=self.colors['primary']))
+    
+    def show_results_page(self):
+        """Display the results page with compact layout"""
+        self.clear_page()
         
-        for bmi_range, category, color in categories:
-            cat_frame = tk.Frame(categories_frame, bg=self.colors['card'])
-            cat_frame.pack(fill=tk.X, padx=10, pady=2)
+        self.current_page = tk.Frame(self.root, bg=self.colors['bg'])
+        self.current_page.pack(fill=tk.BOTH, expand=True)
+        
+        # Neon line at the very top
+        tk.Frame(self.current_page, bg=self.colors['primary'], height=3).pack(fill=tk.X)
+        
+        # Header with back and recalculate buttons - REDUCED HEIGHT TO 125
+        header_frame = tk.Frame(self.current_page, bg=self.colors['bg_secondary'], height=125)
+        header_frame.pack(fill=tk.X)
+        header_frame.pack_propagate(False)
+        
+        # Container for buttons and title
+        header_content = tk.Frame(header_frame, bg=self.colors['bg_secondary'])
+        header_content.pack(fill=tk.BOTH, expand=True)
+        
+        # Back button (left side)
+        back_btn_header = tk.Button(
+            header_content,
+            text="← BACK",
+            font=('Orbitron', 11, 'bold'),
+            bg=self.colors['bg_secondary'],
+            fg=self.colors['primary'],
+            activebackground=self.colors['card'],
+            activeforeground=self.colors['primary'],
+            cursor='hand2',
+            relief=tk.FLAT,
+            padx=20,
+            pady=10,
+            command=self.show_input_page
+        )
+        back_btn_header.pack(side=tk.LEFT, padx=20, pady=12)
+        
+        back_btn_header.bind('<Enter>', lambda e: back_btn_header.config(bg=self.colors['card']))
+        back_btn_header.bind('<Leave>', lambda e: back_btn_header.config(bg=self.colors['bg_secondary']))
+        
+        # Recalculate button (right side)
+        recalc_btn_header = tk.Button(
+            header_content,
+            text="RECALCULATE →",
+            font=('Orbitron', 11, 'bold'),
+            bg=self.colors['bg_secondary'],
+            fg=self.colors['primary'],
+            activebackground=self.colors['card'],
+            activeforeground=self.colors['primary'],
+            cursor='hand2',
+            relief=tk.FLAT,
+            padx=20,
+            pady=10,
+            command=self.recalculate
+        )
+        recalc_btn_header.pack(side=tk.RIGHT, padx=20, pady=12)
+        
+        recalc_btn_header.bind('<Enter>', lambda e: recalc_btn_header.config(bg=self.colors['card']))
+        recalc_btn_header.bind('<Leave>', lambda e: recalc_btn_header.config(bg=self.colors['bg_secondary']))
+        
+        # Title section (centered) - REDUCED FONT SIZES
+        title_section = tk.Frame(header_content, bg=self.colors['bg_secondary'])
+        title_section.place(relx=0.5, rely=0.5, anchor='center')
+        
+        tk.Label(
+            title_section,
+            text="ANALYSIS COMPLETE",
+            font=('Orbitron', 28, 'bold'),
+            bg=self.colors['bg_secondary'],
+            fg=self.colors['primary']
+        ).pack(pady=(5, 2))
+        
+        tk.Label(
+            title_section,
+            text="YOUR PERSONALIZED HEALTH MATRIX",
+            font=('Orbitron', 10),
+            bg=self.colors['bg_secondary'],
+            fg=self.colors['secondary']
+        ).pack(pady=(0, 5))
+        
+        # Main content - REDUCED PADDING
+        content = tk.Frame(self.current_page, bg=self.colors['bg'])
+        content.pack(fill=tk.BOTH, expand=True, padx=50, pady=20)
+        
+        # Top section - Smaller BMI + 3 calorie cards
+        top_section = tk.Frame(content, bg=self.colors['bg'])
+        top_section.pack(fill=tk.X, pady=(0, 20))
+        
+        # Large BMI Card (left) - REDUCED SIZE
+        self.create_large_bmi_card(top_section).pack(side=tk.LEFT, padx=(0, 15))
+        
+        # Calorie cards container (right)
+        calorie_container = tk.Frame(top_section, bg=self.colors['bg'])
+        calorie_container.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # 3 Calorie cards in a row - REDUCED SIZE
+        self.create_compact_metric_card(calorie_container, "MAINTENANCE", 
+                                       f"{int(self.maintenance_calories)}", 
+                                       "CALORIES/DAY",
+                                       self.colors['secondary']).pack(side=tk.LEFT, padx=8, fill=tk.BOTH, expand=True)
+        
+        self.create_compact_metric_card(calorie_container, "SURPLUS", 
+                                       f"+{int(self.surplus_calories - self.maintenance_calories)}", 
+                                       "BULK PHASE",
+                                       self.colors['success']).pack(side=tk.LEFT, padx=8, fill=tk.BOTH, expand=True)
+        
+        self.create_compact_metric_card(calorie_container, "DEFICIT", 
+                                       f"-{int(self.maintenance_calories - self.deficit_calories)}", 
+                                       "CUT PHASE",
+                                       self.colors['danger']).pack(side=tk.LEFT, padx=8, fill=tk.BOTH, expand=True)
+        
+        # Bottom section - 3 recommendation columns - MORE SPACE
+        rec_section = tk.Frame(content, bg=self.colors['bg'])
+        rec_section.pack(fill=tk.BOTH, expand=True)
+        
+        # Configure equal grid weights
+        rec_section.grid_columnconfigure(0, weight=1)
+        rec_section.grid_columnconfigure(1, weight=1)
+        rec_section.grid_columnconfigure(2, weight=1)
+        
+        # Three columns for recommendations - USING GRID FOR EQUAL SIZING
+        nutrition_col = tk.Frame(rec_section, bg=self.colors['bg'])
+        nutrition_col.grid(row=0, column=0, sticky='nsew', padx=(0, 8))
+        
+        exercise_col = tk.Frame(rec_section, bg=self.colors['bg'])
+        exercise_col.grid(row=0, column=1, sticky='nsew', padx=8)
+        
+        lifestyle_col = tk.Frame(rec_section, bg=self.colors['bg'])
+        lifestyle_col.grid(row=0, column=2, sticky='nsew', padx=(8, 0))
+        
+        # Create recommendation sections
+        self.create_recommendation_section(nutrition_col, "🥗 NUTRITION", 
+                                          self.get_nutrition_tips(self.bmi_value, self.goal.get(), 
+                                                                 self.fitness_level.get()))
+        
+        self.create_recommendation_section(exercise_col, "🏋️ TRAINING", 
+                                          self.get_exercise_tips(self.bmi_value, self.goal.get(), 
+                                                                self.fitness_level.get(), 
+                                                                self.desired_body_type.get()))
+        
+        self.create_recommendation_section(lifestyle_col, "🌟 LIFESTYLE", 
+                                          self.get_lifestyle_tips(self.fitness_level.get()))
+    
+    def recalculate(self):
+        """Reset inputs and return to input page"""
+        self.reset_inputs()
+        self.show_input_page()
+    
+    def create_large_bmi_card(self, parent):
+        """Create large BMI display card - REDUCED SIZE"""
+        card = tk.Frame(parent, bg=self.colors['card'], width=280, height=200)
+        card.pack_propagate(False)
+        
+        # Top colored line
+        color = self.get_bmi_color(self.bmi_value)
+        tk.Frame(card, bg=color, height=4).pack(fill=tk.X)
+        
+        tk.Label(
+            card,
+            text="BMI INDEX",
+            font=('Orbitron', 11, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text_dim']
+        ).pack(pady=(20, 5))
+        
+        tk.Label(
+            card,
+            text=f"{self.bmi_value:.1f}",
+            font=('Orbitron', 56, 'bold'),
+            bg=self.colors['card'],
+            fg=color
+        ).pack(pady=10)
+        
+        tk.Label(
+            card,
+            text=self.get_bmi_category(self.bmi_value),
+            font=('Orbitron', 13, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text']
+        ).pack()
+        
+        # BMI range indicator
+        range_text = self.get_bmi_range_text(self.bmi_value)
+        tk.Label(
+            card,
+            text=range_text,
+            font=('Orbitron', 8),
+            bg=self.colors['card'],
+            fg=self.colors['text_dim']
+        ).pack(pady=(5, 15))
+        
+        return card
+    
+    def create_compact_metric_card(self, parent, title, value, subtitle, color):
+        """Create compact metric display card - REDUCED SIZE"""
+        card = tk.Frame(parent, bg=self.colors['card'], height=110)
+        card.pack_propagate(False)
+        
+        # Top colored line
+        tk.Frame(card, bg=color, height=3).pack(fill=tk.X)
+        
+        tk.Label(
+            card,
+            text=title,
+            font=('Orbitron', 8, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['text_dim']
+        ).pack(pady=(10, 3))
+        
+        tk.Label(
+            card,
+            text=value,
+            font=('Orbitron', 22, 'bold'),
+            bg=self.colors['card'],
+            fg=color
+        ).pack(pady=3)
+        
+        tk.Label(
+            card,
+            text=subtitle,
+            font=('Orbitron', 7),
+            bg=self.colors['card'],
+            fg=self.colors['text_dim']
+        ).pack(pady=(0, 8))
+        
+        return card
+    
+    def create_futuristic_card(self, parent, title, inputs, color=None):
+        """Create futuristic input card"""
+        if color is None:
+            color = self.colors['primary']
+            
+        card = tk.Frame(parent, bg=self.colors['card'], relief=tk.FLAT, bd=0)
+        card.pack(fill=tk.X, pady=15)
+        
+        # Title with neon border
+        title_frame = tk.Frame(card, bg=color, height=3)
+        title_frame.pack(fill=tk.X)
+        
+        tk.Label(
+            card,
+            text=title,
+            font=('Orbitron', 12, 'bold'),
+            bg=self.colors['card'],
+            fg=color,
+            pady=15
+        ).pack()
+        
+        # Input fields
+        for input_data in inputs:
+            label_text = input_data[0]
+            variable = input_data[1]
+            from_ = input_data[2]
+            to = input_data[3]
+            increment = input_data[4]
+            unit = input_data[5] if len(input_data) > 5 else ""
+            
+            input_frame = tk.Frame(card, bg=self.colors['card'])
+            input_frame.pack(pady=8, padx=20)
             
             tk.Label(
-                cat_frame,
-                text="●",
-                font=('Helvetica', 16),
+                input_frame,
+                text=label_text,
+                font=('Orbitron', 9, 'bold'),
                 bg=self.colors['card'],
-                fg=color
-            ).pack(side=tk.LEFT)
-            
-            tk.Label(
-                cat_frame,
-                text=f"{bmi_range}: {category}",
-                font=('Helvetica', 9),
-                bg=self.colors['card'],
-                fg=self.colors['text']
+                fg=self.colors['text_dim'],
+                width=10
             ).pack(side=tk.LEFT, padx=5)
+            
+            spinbox = tk.Spinbox(
+                input_frame,
+                from_=from_,
+                to=to,
+                textvariable=variable,
+                width=12,
+                font=('Orbitron', 11, 'bold'),
+                bg='#000000',
+                fg=self.colors['secondary'],
+                buttonbackground=self.colors['card_border'],
+                relief=tk.FLAT,
+                increment=increment,
+                insertbackground=self.colors['primary']
+            )
+            spinbox.pack(side=tk.LEFT, padx=5)
+            
+            if unit:
+                tk.Label(
+                    input_frame,
+                    text=unit,
+                    font=('Orbitron', 9),
+                    bg=self.colors['card'],
+                    fg=self.colors['text_dim']
+                ).pack(side=tk.LEFT, padx=5)
         
-    def create_recommendations_section(self, parent):
-        """Create recommendations display section"""
-        content = self.create_card_frame(parent, "💡 Personalized Recommendations")
+        tk.Frame(card, bg=self.colors['bg'], height=15).pack()
+    
+    def create_empty_card(self, parent, title):
+        """Create empty card for custom content"""
+        card = tk.Frame(parent, bg=self.colors['card'], relief=tk.FLAT, bd=0)
+        card.pack(fill=tk.X, pady=15)
         
-        # Create text widget with scrollbar
-        text_frame = tk.Frame(content, bg=self.colors['card'])
-        text_frame.pack(fill=tk.BOTH, expand=True)
+        title_frame = tk.Frame(card, bg=self.colors['secondary'], height=3)
+        title_frame.pack(fill=tk.X)
         
-        scrollbar = tk.Scrollbar(text_frame)
+        tk.Label(
+            card,
+            text=title,
+            font=('Orbitron', 12, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['secondary'],
+            pady=15
+        ).pack()
+        
+        return card
+    
+    def create_neon_radio_group(self, parent, variable, options):
+        """Create neon radio button group"""
+        frame = tk.Frame(parent, bg=self.colors['card'])
+        frame.pack(pady=10)
+        
+        for text, value in options:
+            rb = tk.Radiobutton(
+                frame,
+                text=text,
+                variable=variable,
+                value=value,
+                font=('Orbitron', 10, 'bold'),
+                bg=self.colors['card'],
+                fg=self.colors['secondary'],
+                activebackground=self.colors['card'],
+                activeforeground=self.colors['secondary'],
+                selectcolor=self.colors['bg_secondary'],
+                cursor='hand2'
+            )
+            rb.pack(side=tk.LEFT, padx=15)
+        
+        tk.Frame(parent, bg=self.colors['bg'], height=15).pack()
+    
+    def create_neon_dropdown(self, parent, variable, values):
+        """Create neon styled dropdown with blue text on black background"""
+        combo = ttk.Combobox(
+            parent,
+            textvariable=variable,
+            values=values,
+            state='readonly',
+            font=('Orbitron', 10, 'bold'),
+            style='Custom.TCombobox',
+            width=20
+        )
+        combo.pack(pady=10)
+        
+        tk.Frame(parent, bg=self.colors['bg'], height=15).pack()
+    
+    def create_recommendation_section(self, parent, title, tips):
+        """Create scrollable recommendation section"""
+        # Container
+        container = tk.Frame(parent, bg=self.colors['card'])
+        container.pack(fill=tk.BOTH, expand=True)
+        
+        # Title bar
+        title_bar = tk.Frame(container, bg=self.colors['accent'], height=3)
+        title_bar.pack(fill=tk.X)
+        
+        tk.Label(
+            container,
+            text=title,
+            font=('Orbitron', 11, 'bold'),
+            bg=self.colors['card'],
+            fg=self.colors['accent'],
+            pady=10
+        ).pack()
+        
+        # Scrollable text frame
+        text_frame = tk.Frame(container, bg=self.colors['card'])
+        text_frame.pack(fill=tk.BOTH, expand=True, padx=12, pady=8)
+        
+        # Scrollbar
+        scrollbar = tk.Scrollbar(text_frame, bg=self.colors['card_border'])
         scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
         
-        self.recommendations_text = tk.Text(
+        # Text widget
+        text_widget = tk.Text(
             text_frame,
             wrap=tk.WORD,
-            width=40,
-            height=20,
-            font=('Helvetica', 10),
-            bg=self.colors['bg'],
+            font=('Consolas', 8),
+            bg=self.colors['bg_secondary'],
             fg=self.colors['text'],
             yscrollcommand=scrollbar.set,
             relief=tk.FLAT,
-            padx=10,
-            pady=10,
-            state=tk.NORMAL
+            padx=8,
+            pady=8,
+            insertbackground=self.colors['primary']
         )
-        self.recommendations_text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        scrollbar.config(command=self.recommendations_text.yview)
+        text_widget.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
         
-        # Configure text tags for styling
-        self.recommendations_text.tag_config('heading', font=('Helvetica', 12, 'bold'), foreground=self.colors['secondary'])
-        self.recommendations_text.tag_config('subheading', font=('Helvetica', 10, 'bold'), foreground=self.colors['primary'])
-        self.recommendations_text.tag_config('bullet', foreground=self.colors['success'])
+        # Configure scrollbar
+        scrollbar.config(command=text_widget.yview)
         
-        # Initial message
-        self.recommendations_text.insert('1.0', "Click 'Calculate BMI & Get Recommendations' to see your personalized health and fitness plan!")
-        self.recommendations_text.config(state=tk.DISABLED)
+        # Insert tips
+        for tip in tips:
+            text_widget.insert(tk.END, f"▸ {tip}\n\n")
         
-    def calculate_bmi(self):
-        """Calculate BMI and generate recommendations"""
+        text_widget.config(state=tk.DISABLED)
+    
+    def calculate_and_proceed(self):
+        """Calculate BMI and calories, then show results"""
         try:
             # Get values
             height_m = self.height_cm.get() / 100
             weight = self.weight_kg.get()
+            age = self.age.get()
+            gender = self.gender.get()
+            activity = self.activity_level.get()
             
-            # Validate inputs
+            # Validate
             if height_m <= 0 or weight <= 0:
-                messagebox.showerror("Invalid Input", "Height and weight must be positive values!")
+                messagebox.showerror("ERROR", "Invalid height or weight values!")
                 return
             
             # Calculate BMI
-            bmi = weight / (height_m ** 2)
-            self.bmi_value.set(f"{bmi:.1f}")
+            self.bmi_value = weight / (height_m ** 2)
             
-            # Determine category
-            if bmi < 18.5:
-                category = "Underweight"
-                color = "#3498DB"
-            elif 18.5 <= bmi < 25:
-                category = "Normal Weight"
-                color = "#27AE60"
-            elif 25 <= bmi < 30:
-                category = "Overweight"
-                color = "#F39C12"
+            # Calculate calories using Mifflin-St Jeor Equation
+            if gender == "male":
+                bmr = (10 * weight) + (6.25 * self.height_cm.get()) - (5 * age) + 5
             else:
-                category = "Obese"
-                color = "#E74C3C"
+                bmr = (10 * weight) + (6.25 * self.height_cm.get()) - (5 * age) - 161
             
-            self.bmi_category.set(category)
+            # Activity multipliers
+            activity_multipliers = {
+                "sedentary": 1.2,
+                "light": 1.375,
+                "moderate": 1.55,
+                "active": 1.725,
+                "very active": 1.9
+            }
             
-            # Calculate ideal weight range (BMI 18.5 - 24.9)
-            ideal_min = 18.5 * (height_m ** 2)
-            ideal_max = 24.9 * (height_m ** 2)
-            self.ideal_weight_range.set(f"{ideal_min:.1f} - {ideal_max:.1f} kg")
+            multiplier = activity_multipliers.get(activity, 1.55)
+            self.maintenance_calories = bmr * multiplier
+            self.surplus_calories = self.maintenance_calories + 300
+            self.deficit_calories = self.maintenance_calories - 500
             
-            # Generate recommendations
-            self.generate_recommendations(bmi, category, weight, ideal_min, ideal_max)
+            # Show results page
+            self.show_results_page()
             
-        except tk.TclError:
-            messagebox.showerror("Invalid Input", "Please enter valid numerical values!")
         except Exception as e:
-            messagebox.showerror("Error", f"An error occurred: {str(e)}")
+            messagebox.showerror("ERROR", f"Calculation failed: {str(e)}")
     
-    def generate_recommendations(self, bmi, category, current_weight, ideal_min, ideal_max):
-        """Generate personalized nutrition and exercise recommendations"""
-        # Enable text widget
-        self.recommendations_text.config(state=tk.NORMAL)
-        
-        # Clear existing content
-        self.recommendations_text.delete('1.0', tk.END)
-        
-        # Build recommendations as a single string
-        recommendations = "YOUR PERSONALIZED PLAN\n\n"
-        
-        # BMI Analysis
-        recommendations += "📊 BMI Analysis\n"
+    def get_bmi_category(self, bmi):
+        """Get BMI category"""
         if bmi < 18.5:
-            recommendations += f"Your BMI indicates you're underweight. Target: gain {ideal_min - current_weight:.1f} kg to reach healthy range.\n\n"
-        elif bmi >= 30:
-            recommendations += f"Your BMI indicates obesity. Target: lose {current_weight - ideal_max:.1f} kg to reach healthy range.\n\n"
-        elif bmi >= 25:
-            recommendations += f"Your BMI indicates you're overweight. Target: lose {current_weight - ideal_max:.1f} kg to reach healthy range.\n\n"
+            return "UNDERWEIGHT"
+        elif 18.5 <= bmi < 25:
+            return "NORMAL"
+        elif 25 <= bmi < 30:
+            return "OVERWEIGHT"
         else:
-            recommendations += "Congratulations! You're in the healthy weight range. Focus on maintenance and overall fitness.\n\n"
-        
-        # Nutrition Plan
-        recommendations += "🥗 Nutrition Recommendations\n"
-        nutrition_tips = self.get_nutrition_tips(bmi, self.goal.get(), self.fitness_level.get())
-        for tip in nutrition_tips:
-            recommendations += f"• {tip}\n"
-        recommendations += "\n"
-        
-        # Exercise Plan
-        recommendations += "🏋️ Exercise Recommendations\n"
-        exercise_tips = self.get_exercise_tips(bmi, self.goal.get(), self.fitness_level.get(), self.desired_body_type.get())
-        for tip in exercise_tips:
-            recommendations += f"• {tip}\n"
-        recommendations += "\n"
-        
-        # Lifestyle Tips
-        recommendations += "🌟 Lifestyle Tips\n"
-        lifestyle_tips = self.get_lifestyle_tips(self.fitness_level.get())
-        for tip in lifestyle_tips:
-            recommendations += f"• {tip}\n"
-        
-        # Insert all at once
-        self.recommendations_text.insert('1.0', recommendations)
-        
-        # Disable to prevent editing
-        self.recommendations_text.config(state=tk.DISABLED)
+            return "OBESE"
+    
+    def get_bmi_color(self, bmi):
+        """Get color based on BMI"""
+        if bmi < 18.5:
+            return self.colors['secondary']
+        elif 18.5 <= bmi < 25:
+            return self.colors['success']
+        elif 25 <= bmi < 30:
+            return self.colors['warning']
+        else:
+            return self.colors['danger']
+    
+    def get_bmi_range_text(self, bmi):
+        """Get BMI range information"""
+        if bmi < 18.5:
+            return "< 18.5 Range"
+        elif 18.5 <= bmi < 25:
+            return "18.5 - 24.9 Range"
+        elif 25 <= bmi < 30:
+            return "25.0 - 29.9 Range"
+        else:
+            return "≥ 30.0 Range"
     
     def get_nutrition_tips(self, bmi, goal, fitness_level):
-        """Generate nutrition tips based on user profile"""
+        """Generate nutrition tips"""
         tips = []
         
-        # Base tips for everyone
-        tips.append("Drink at least 8-10 glasses of water daily")
-        tips.append("Eat 5-6 small meals throughout the day to boost metabolism")
+        tips.append("Hydration: 3-4 liters of water daily minimum")
+        tips.append("Meal frequency: 5-6 small meals for optimal metabolism")
         
-        # BMI-specific tips
         if bmi < 18.5:
-            tips.append("Increase caloric intake by 300-500 calories per day")
-            tips.append("Focus on nutrient-dense foods: nuts, avocados, whole grains")
-            tips.append("Add healthy fats: olive oil, nuts, fatty fish")
-            tips.append("Protein: 1.6-2.2g per kg body weight (lean meats, eggs, dairy)")
+            tips.append("Caloric surplus: +300-500 calories above maintenance")
+            tips.append("Protein: 1.8-2.2g per kg bodyweight daily")
+            tips.append("Healthy fats: Nuts, avocados, olive oil, fatty fish")
+            tips.append("Dense carbs: Oats, rice, pasta, sweet potatoes")
         elif bmi >= 30:
-            tips.append("Create a caloric deficit of 500-750 calories per day")
-            tips.append("Eliminate sugary drinks and processed foods")
-            tips.append("Fill half your plate with vegetables")
-            tips.append("Lean protein: chicken breast, fish, legumes (1.2-1.6g/kg)")
-            tips.append("Avoid late-night eating (stop 3 hours before bed)")
+            tips.append("Caloric deficit: -500-750 calories below maintenance")
+            tips.append("Protein: 1.6-2.0g per kg to preserve muscle mass")
+            tips.append("Eliminate: Sugary drinks, processed foods, refined carbs")
+            tips.append("High volume: Fill 50% of plate with vegetables")
+            tips.append("Meal timing: Stop eating 3 hours before bed")
         elif bmi >= 25:
-            tips.append("Moderate caloric deficit of 300-500 calories per day")
-            tips.append("Reduce refined carbs, increase whole grains")
-            tips.append("Protein: 1.4-1.8g per kg body weight")
-            tips.append("Healthy snacks: Greek yogurt, fruits, nuts (portion-controlled)")
+            tips.append("Moderate deficit: -300-500 calories daily")
+            tips.append("Protein: 1.4-1.8g per kg bodyweight")
+            tips.append("Complex carbs: Switch to whole grains, reduce refined carbs")
+            tips.append("Smart snacking: Greek yogurt, nuts (portioned), fruits")
         else:
-            tips.append("Maintain balanced macros: 40% carbs, 30% protein, 30% fats")
-            tips.append("Protein: 1.2-1.6g per kg body weight")
-            tips.append("Include variety: all food groups in moderation")
+            tips.append("Balanced macros: 40% carbs / 30% protein / 30% fats")
+            tips.append("Protein: 1.2-1.6g per kg for maintenance")
+            tips.append("Food variety: Include all food groups in moderation")
         
-        # Goal-specific tips
         if goal == "gain muscle":
-            tips.append("Increase protein to 1.8-2.2g per kg body weight")
-            tips.append("Eat protein within 30 mins post-workout")
-            tips.append("Complex carbs pre-workout: oats, brown rice, sweet potato")
+            tips.append("Post-workout: 30g protein within 30 mins")
+            tips.append("Pre-workout carbs: Oats, banana, rice for energy")
+            tips.append("Protein boost: Increase to 2.0-2.2g per kg")
         elif goal == "lose weight":
-            tips.append("Track calories using an app (MyFitnessPal recommended)")
-            tips.append("Increase fiber intake: vegetables, fruits, whole grains")
-            tips.append("Limit sodium to reduce water retention")
+            tips.append("Tracking: Use MyFitnessPal or similar app")
+            tips.append("Fiber: 30g+ daily from vegetables and fruits")
+            tips.append("Sodium: Limit to reduce water retention")
         
-        # Fitness level specific
         if fitness_level == "advanced":
-            tips.append("Consider carb cycling: high carbs on training days")
-            tips.append("Time your nutrients around workouts for optimal performance")
+            tips.append("Nutrient timing: Carb cycling on training days")
+            tips.append("Supplements: Consider creatine, protein powder, BCAAs")
         
         return tips
     
     def get_exercise_tips(self, bmi, goal, fitness_level, desired_body):
-        """Generate exercise tips based on user profile"""
+        """Generate exercise tips"""
         tips = []
         
-        # Fitness level base recommendations
         if fitness_level == "beginner":
-            tips.append("Start with 3-4 days per week, 30-45 minutes per session")
-            tips.append("Walking/light jogging: 20-30 mins, 3x per week")
-            tips.append("Bodyweight exercises: squats, push-ups, planks (2 sets of 10)")
-            tips.append("Focus on proper form over intensity")
-            tips.append("Rest days are crucial - take 1-2 days between workouts")
+            tips.append("Frequency: 3-4 sessions per week, 30-45 mins each")
+            tips.append("Cardio foundation: Walking/jogging 20-30 mins, 3x weekly")
+            tips.append("Bodyweight basics: Squats, push-ups, planks (2x10 reps)")
+            tips.append("Form first: Master technique before adding weight")
+            tips.append("Recovery: 48 hours rest between training same muscles")
         elif fitness_level == "intermediate":
-            tips.append("Train 4-5 days per week, 45-60 minutes per session")
-            tips.append("Mix cardio and strength training")
-            tips.append("Cardio: running, cycling, or swimming 3x per week")
-            tips.append("Strength training: 3x per week (upper/lower split)")
-        else:  # advanced
-            tips.append("Train 5-6 days per week with varied intensity")
-            tips.append("Implement progressive overload principles")
-            tips.append("Advanced splits: push/pull/legs or upper/lower")
+            tips.append("Frequency: 4-5 sessions weekly, 45-60 mins each")
+            tips.append("Split training: Upper/lower or push/pull/legs")
+            tips.append("Cardio: 30-40 mins, 3x weekly (running, cycling, swimming)")
+            tips.append("Progressive overload: Increase weight 2.5-5% weekly")
+        else:
+            tips.append("Frequency: 5-6 sessions weekly, varied intensity")
+            tips.append("Advanced splits: PPL or bro-split with periodization")
+            tips.append("Intensity techniques: Drop sets, supersets, rest-pause")
+            tips.append("Deload week: Every 4-6 weeks reduce volume by 50%")
         
-        # BMI-specific recommendations
         if bmi < 18.5:
-            tips.append("Focus on strength training over cardio (70/30 split)")
-            tips.append("Compound movements: deadlifts, squats, bench press")
-            tips.append("Limit cardio to 2x per week, 20 mins max")
+            tips.append("Strength focus: 70% resistance, 30% cardio")
+            tips.append("Compounds: Deadlifts, squats, bench press, rows (4x6-8)")
+            tips.append("Cardio limit: 2x weekly maximum, 20 mins sessions")
         elif bmi >= 30:
-            tips.append("Low-impact cardio: swimming, cycling, elliptical")
-            tips.append("Start with 15-20 mins, gradually increase to 45 mins")
-            tips.append("Strength training 2x per week to preserve muscle")
-            tips.append("Include flexibility work: yoga or stretching")
+            tips.append("Low-impact cardio: Swimming, cycling, elliptical")
+            tips.append("Duration: Start 15-20 mins, progress to 45 mins")
+            tips.append("Resistance: 2x weekly to preserve muscle mass")
+            tips.append("Flexibility: Daily stretching or yoga for mobility")
         elif bmi >= 25:
-            tips.append("Cardio 4x per week: HIIT or steady-state (30-40 mins)")
-            tips.append("Strength training 3x per week (full body or split)")
-            tips.append("Include active recovery: walking, swimming")
+            tips.append("HIIT training: 20-30 mins, 3-4x weekly")
+            tips.append("Resistance: 3x weekly full-body or split routine")
+            tips.append("Active recovery: Walking, swimming on rest days")
         
-        # Desired body type recommendations
         if desired_body == "muscular":
-            tips.append("Heavy compound lifts: 4-6 reps, 4-5 sets")
-            tips.append("Focus: deadlifts, squats, bench press, rows")
-            tips.append("Progressive overload: increase weight weekly")
+            tips.append("Heavy compounds: 4-6 reps, 4-5 sets, 80-85% 1RM")
+            tips.append("Core lifts: Deadlift, squat, bench, OHP, rows")
+            tips.append("Time under tension: Control eccentric phase (3 secs)")
         elif desired_body == "lean":
-            tips.append("Circuit training: high reps (12-15), short rest (30 secs)")
-            tips.append("Mix cardio with resistance training")
-            tips.append("HIIT sessions 2-3x per week")
+            tips.append("Circuit training: 12-15 reps, minimal rest (30s)")
+            tips.append("Metabolic conditioning: Burpees, kettlebell swings")
+            tips.append("HIIT: 30s work / 30s rest intervals, 20 mins")
         elif desired_body == "athletic":
-            tips.append("Functional training: kettlebells, TRX, battle ropes")
-            tips.append("Plyometrics: box jumps, burpees, jump squats")
-            tips.append("Sport-specific training if applicable")
+            tips.append("Functional training: TRX, kettlebells, battle ropes")
+            tips.append("Plyometrics: Box jumps, jump squats, burpees")
+            tips.append("Agility: Ladder drills, cone drills, sprint intervals")
         
-        # Goal-specific
         if goal == "lose weight":
-            tips.append("Create caloric burn: aim for 300-500 calories per session")
-            tips.append("Increase daily steps to 10,000+")
+            tips.append("Calorie burn target: 300-500 per session")
+            tips.append("Daily steps: Aim for 10,000+ via pedometer")
         elif goal == "gain muscle":
-            tips.append("Limit cardio to preserve muscle mass")
-            tips.append("Focus on progressive overload in strength training")
+            tips.append("Cardio minimal: 2x weekly max to preserve mass")
+            tips.append("Progressive overload: Track and beat lifts weekly")
         
         return tips
     
     def get_lifestyle_tips(self, fitness_level):
-        """Generate general lifestyle tips"""
+        """Generate lifestyle tips"""
         tips = [
-            "Sleep 7-9 hours per night for optimal recovery",
-            "Manage stress through meditation or deep breathing (10 mins daily)",
-            "Track your progress weekly: weight, measurements, photos",
-            "Be consistent - results take 8-12 weeks to show",
-            "Find a workout buddy for accountability",
-            "Prepare meals in advance to avoid unhealthy choices",
-            "Listen to your body - rest when needed to prevent injury"
+            "Sleep priority: 7-9 hours nightly for recovery and hormones",
+            "Stress management: 10 mins daily meditation or breathing",
+            "Progress tracking: Weekly photos, measurements, weight log",
+            "Consistency: Results visible after 8-12 weeks minimum",
+            "Accountability: Training partner or coach recommended",
+            "Meal prep: Prepare 3 days in advance to avoid bad choices",
+            "Listen to body: Rest when fatigued to prevent injury",
+            "Supplementation: Multivitamin, Vitamin D, Omega-3 basics"
         ]
         
         if fitness_level == "beginner":
-            tips.append("Start small and build sustainable habits")
-            tips.append("Don't compare yourself to others - focus on your progress")
+            tips.append("Habit formation: Start small, build gradually")
+            tips.append("No comparison: Focus on personal progress only")
+            tips.append("Learning phase: Watch form videos, ask for help")
         elif fitness_level == "advanced":
-            tips.append("Consider working with a coach for specialized programming")
-            tips.append("Periodize your training to avoid plateaus")
+            tips.append("Coaching: Consider hiring specialist for optimization")
+            tips.append("Periodization: Plan mesocycles to avoid plateaus")
+            tips.append("Recovery tools: Foam rolling, massage, ice baths")
+            tips.append("Advanced metrics: Track HRV, sleep quality, readiness")
         
         return tips
 
